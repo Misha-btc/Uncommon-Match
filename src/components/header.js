@@ -9,16 +9,18 @@ const { Title } = Typography;
 function Header() {
   const { connectWallet } = useConnectWallet();
   const [error, setError] = useState('');
-  const { setPaymentAddress, setOrdinalsAddress, paymentAddress, ordinalsAddress, isAddressConfirmed } = useWallet();
+  const { setPaymentAddress, setOrdinalsAddress, paymentAddress, ordinalsAddress, isAddressConfirmed, isConnected, setIsConnected } = useWallet();
 
 
   const handleConnectClick = async () => {
     setError('');
+    localStorage.clear();
     try {
       const result = await connectWallet();
       if (result.success) {
+        setIsConnected(true);
         setPaymentAddress(result.paymentAddress);
-        const testOrdinalsAddress = 'bc1px9400fnrhfhhesde92u4r32jm4cwdaq93tyette8gwv4t32ajacsxgz4av';
+        const testOrdinalsAddress = 'bc1pkt45qac4dmmm6nwlxw6xfue6cjwnfanfyluyg85elrqqnl3y50lqm00dmx';
         const ordinalsAddress = result.ordinalsAddress;
         const addr = 'o'
         if (addr === 't') {
@@ -40,6 +42,7 @@ function Header() {
 
   
   const handleDisconnectClick = () => {
+    setIsConnected(false);
     setPaymentAddress('');
     setOrdinalsAddress('');
     localStorage.clear();
@@ -70,7 +73,7 @@ function Header() {
         }}>
           <span style={{ color: 'white', fontStyle: 'italic' }}>Alpha</span><span style={{ color: 'rgb(34, 197, 94)', fontWeight: 'bold' }}>Match</span>
         </Title>
-        {paymentAddress && ordinalsAddress ? (
+        {isConnected ? (
           <div>
           <Button 
             type="primary" 

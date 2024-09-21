@@ -6,6 +6,7 @@ export const WalletProvider = ({ children }) => {
   const [paymentAddress, setPaymentAddress] = useState(localStorage.getItem('paymentAddress') || '');
   const [ordinalsAddress, setOrdinalsAddress] = useState(localStorage.getItem('ordinalsAddress') || '');
   const [isAddressConfirmed, setIsAddressConfirmed] = useState(ordinalsAddress);
+  const [isConnected, setIsConnected] = useState(ordinalsAddress);
 
   return (
     <WalletContext.Provider value={{
@@ -14,7 +15,9 @@ export const WalletProvider = ({ children }) => {
       setPaymentAddress,
       setOrdinalsAddress,
       isAddressConfirmed,
-      setIsAddressConfirmed
+      setIsAddressConfirmed,
+      isConnected,
+      setIsConnected
     }}>
       {children}
     </WalletContext.Provider>

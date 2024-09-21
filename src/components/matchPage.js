@@ -3,9 +3,10 @@ import Sheet from './sheet';
 import { useWallet } from '../context/walletContext';
 import { Input } from 'antd';
 import { ScanOutlined } from '@ant-design/icons';
+import ScanComponent from './scanComponent';
 
 function MatchPage() {
-  const { ordinalsAddress, setIsAddressConfirmed, isAddressConfirmed } = useWallet();
+  const { ordinalsAddress, setIsAddressConfirmed, isAddressConfirmed, isConnected } = useWallet();
   const [address, setAddress] = useState('');
 
 
@@ -34,9 +35,9 @@ function MatchPage() {
             />
           </div>
         )}
-        {isAddressConfirmed && (
+        {isConnected && (
           <>
-            <h1 style={{ textAlign: 'center' }}>Your matches</h1>
+            <ScanComponent />
             <Sheet />
           </>
         )}

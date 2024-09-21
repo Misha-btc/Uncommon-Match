@@ -1,182 +1,235 @@
-import React, { useEffect, useState } from 'react';
-import { Table } from 'antd';
+import React, { useEffect, useState, useMemo } from 'react';
+import { Table, Tag, Radio } from 'antd';
 import { useRareSats } from '../context/rareSatsContext';
 import { useMagisatListing } from '../context/magisatListingContext';
-import ordinals1 from './ordinals1.png';
 import magisatLogo from './magisatLogo.png';
 
 const Sheet = () => {
   const { blackSats, uncommonSats, loading, setLoading } = useRareSats();
   const { blackUncommonListings, uncommonListings } = useMagisatListing();
   const [dataSource, setDataSource] = useState([]);
+  const [filterOption, setFilterOption] = useState('all');
+
+  const columns = useMemo(() => [
+    {
+      title: 'alpha',
+      dataIndex: 'uncommon',
+      key: 'uncommon',
+      align: 'center',
+      width: '20%',
+      render: (text, record) => (
+        <Tag color={record.uncommonColor}>
+          {text}
+        </Tag>
+      ),
+    },
+    {
+      title: 'price',
+      dataIndex: 'uncommonPrice',
+      key: 'uncommonPrice',
+      align: 'center',
+      width: '15%',
+      render: (text) => text ? `${text} sats` : '-',
+    },
+    {
+      title: 'listing',
+      dataIndex: 'uncommonId',
+      key: 'uncommonId',
+      align: 'center',
+      width: '15%',
+      render: (text) => text ? (
+        <a href={`https://magisat.io/listing/${text}`} target="_blank" rel="noopener noreferrer">
+          <img src={magisatLogo} alt="Magisat" style={{ width: '30px', height: '30px' }} />
+        </a>
+      ) : '-',
+    },
+    {
+      title: 'omega',
+      dataIndex: 'black',
+      key: 'black',
+      align: 'center',
+      width: '20%',
+      render: (text, record) => (
+        <Tag color={record.blackColor}>
+          {text}
+        </Tag>
+      ),
+    },
+    {
+      title: 'price',
+      dataIndex: 'blackPrice',
+      key: 'blackPrice',
+      align: 'center',
+      width: '15%',
+      render: (text) => text ? `${text} sats` : '-',
+    },
+    {
+      title: 'listing',
+      dataIndex: 'blackId',
+      key: 'blackId',
+      align: 'center',
+      width: '15%',
+      render: (text) => text ? (
+        <a href={`https://magisat.io/listing/${text}`} target="_blank" rel="noopener noreferrer">
+          <img src={magisatLogo} alt="Magisat" style={{ width: '30px', height: '30px' }} />
+        </a>
+      ) : '-',
+    },
+  ], []);
 
   useEffect(() => {
     if (blackSats && uncommonSats && blackUncommonListings.length > 0 && uncommonListings.length > 0) {
       setLoading('loading...');
       const blackSet = new Set(blackSats);
       const uncommonSet = new Set(uncommonSats);
-      const blackListingsSet = new Set(blackUncommonListings.map(listing => listing.satIndex));
+
+      // Добавляем тестовый сат в список листингов
+      const testBlackListing = {
+        satIndex: '1544987599999999',
+        relativeUnitPrice: 100000, // Пример цены
+        id: 'test-listing-id'
+      };
+      const updatedBlackUncommonListings = [...blackUncommonListings];
+      
+      const blackListingsSet = new Set(updatedBlackUncommonListings.map(listing => listing.satIndex));
       const uncommonListingsSet = new Set(uncommonListings.map(listing => listing.satIndex));
 
-      const newDataSource = [];
-      const addedSats = new Set();
-      const hypotheticalPairs = new Map();
-      const listingPairs = new Map();
+      const pairMap = new Map();
 
-      // Находим пары на листингах
-      blackUncommonListings.forEach(black => {
-        const uncommon = Number(black.satIndex) - 99_999_999;
-        if (uncommonListingsSet.has(uncommon.toString())) {
-          listingPairs.set(Number(black.satIndex), uncommon);
+      const addOrUpdatePair = (uncommonSat, blackSat, data) => {
+        const key = `${uncommonSat}-${blackSat}`;
+        if (!pairMap.has(key)) {
+          pairMap.set(key, {
+            key,
+            uncommon: uncommonSat,
+            black: blackSat,
+            uncommonColor: 'gray',
+            blackColor: 'gray',
+            uncommonPrice: null,
+            blackPrice: null,
+            uncommonId: null,
+            blackId: null,
+            uncommonListed: null,
+            blackListed: null,
+            match: null,
+          });
         }
-      });
-
-      // Функция для добавления сата в dataSource
-      const addSat = (
-        sat, 
-        isUncommon, 
-        isOwned, 
-        blackColor, 
-        uncommonColor, 
-        uncommonPrice = null, 
-        blackPrice = null,
-        uncommonId = null, 
-        blackId = null
-      ) => {
-        if (addedSats.has(sat)) return;
-
-        const pair = isUncommon ? sat + 99_999_999 : sat - 99_999_999;
-        const key = `${isUncommon ? 'uncommon' : 'black'}-${isOwned ? 'own' : 'listing'}-${sat}`;
-
-        newDataSource.push({
-          key,
-          uncommon: isUncommon ? sat : pair,
-          black: isUncommon ? pair : sat,
-          uncommonColor: uncommonColor,
-          blackColor: blackColor,
-          uncommonPrice: uncommonPrice,
-          blackPrice: blackPrice,
-          uncommonId: uncommonId,
-          blackId: isUncommon ? null : blackId,
-        });
-
-        addedSats.add(sat);
-        
-        // Добавляем гипотетическую пару
-        if (isOwned) {
-          hypotheticalPairs.set(pair, 'red');
-        }
+        Object.assign(pairMap.get(key), data);
       };
 
-      // Добавляем наши саты из useRareSats
-      uncommonSet.forEach(uncommon => addSat(uncommon, true, true, 'green'));
-      blackSet.forEach(black => addSat(black, false, true, 'green'));
+      // Обработка owned сатов
+      uncommonSet.forEach(uncommon => {
+        addOrUpdatePair(uncommon, uncommon + 99_999_999, { uncommonColor: 'green', uncommonListed: 'own' });
+      });
+      blackSet.forEach(black => {
+        addOrUpdatePair(black - 99_999_999, black, { blackColor: 'green', blackListed: 'own' });
+      });
 
-      // Обрабатываем листинги
+      const processOwnedSats = () => {
+        uncommonSet.forEach(uncommonSat => {
+          const matchBlackSat = uncommonSat + 99_999_999;
+          let data = {};
+          blackSet.forEach(blackSat => {
+            if (blackSat === matchBlackSat) {
+              data = {
+                uncommonColor: 'green',
+                blackColor: 'green',
+                blackListed: 'own',
+                match: 'match',
+              };
+            }
+          });
+
+          addOrUpdatePair(uncommonSat, matchBlackSat, data);
+        });
+      };
+
+      processOwnedSats();
+
+      // Обработка листингов
       const processListing = (listing, isUncommon) => {
         const sat = Number(listing.satIndex);
         const pair = isUncommon ? sat + 99_999_999 : sat - 99_999_999;
-        if (addedSats.has(sat)) {
-          // Если сат уже добавлен (наш), меняем цвет на фиолетовый
-          const index = newDataSource.findIndex(item => 
-            (isUncommon ? item.uncommon : item.black) === sat
-          );
-          if (index !== -1) {
-            if (isUncommon) {
-              newDataSource[index].uncommonColor = 'purple';
-              newDataSource[index].uncommonPrice = listing.relativeUnitPrice;
-              newDataSource[index].uncommonId = listing.id;
-            } else {
-              newDataSource[index].blackColor = 'purple';
-              newDataSource[index].blackPrice = listing.relativeUnitPrice;
-              newDataSource[index].blackId = listing.id;
-            }
-          }
-        } else if (hypotheticalPairs.has(sat)) {
-          // Если сат совпадает с гипотетической парой, добавляем как красный
-          addSat(sat, isUncommon, false, 'red', 'red', listing.relativeUnitPrice, null, listing.id, listing.id);
-        } else if (listingPairs.has(sat)) {
-          // Если сат имеет пару на листинге, добавляем как голубой
-          addSat(sat, isUncommon, false, 'blue', 'blue', listing.relativeUnitPrice, null, listing.id, listing.id);
-        } else if (uncommonSet.has(isUncommon ? sat : pair) || blackSet.has(isUncommon ? pair : sat)) {
-          // Добавляем только если у нас есть хотя бы один сат из пары
-          addSat(sat, isUncommon, false, 'black', 'black', listing.relativeUnitPrice, null, listing.id, listing.id);
+        const data = isUncommon ? {
+          uncommonColor: 'blue',
+          uncommonPrice: listing.relativeUnitPrice,
+          uncommonId: listing.id,
+          uncommonListed: 'listing',
+        } : {
+          blackColor: 'blue',
+          blackPrice: listing.relativeUnitPrice,
+          blackId: listing.id,
+          blackListed: 'listing',
+        };
+        
+        if (isUncommon ? uncommonSet.has(sat) : blackSet.has(sat)) {
+          data[isUncommon ? 'uncommonColor' : 'blackColor'] = 'purple';
+        } else if (isUncommon ? blackListingsSet.has(pair.toString()) : uncommonListingsSet.has(pair.toString())) {
+          data.match = 'match';
+        } else if (isUncommon ? uncommonSet.has(pair) : blackSet.has(pair)) {
+          data.match = 'match';
+        }
+        
+        addOrUpdatePair(isUncommon ? sat : pair, isUncommon ? pair : sat, data);
+      };
+
+      updatedBlackUncommonListings.forEach(listing => processListing(listing, false));
+      uncommonListings.forEach(listing => processListing(listing, true));
+
+      // Фильтруем и включаем все owned саты
+      const applyFilter = (data) => {
+        switch (filterOption) {
+          case 'pairedListings':
+            return data.filter(item => item.match === 'match' && (item.uncommonListed === 'listing' || item.blackListed === 'listing'));
+          case 'ownPairs':
+            return data.filter(item => item.match === 'match' && item.uncommonColor === 'green' && item.blackColor === 'green');
+          case 'ownUnpaired':
+            return data.filter(item => 
+              (item.uncommonColor === 'green' && item.blackColor !== 'green') || 
+              (item.blackColor === 'green' && item.uncommonColor !== 'green')
+            );
+          case 'ownMatch':
+            return data.filter(item => 
+              (item.uncommonColor === 'green' && item.blackListed === 'listing') || 
+              (item.blackColor === 'green' && item.uncommonListed === 'listing')
+            );
+          default:
+            return data;
         }
       };
 
-      blackUncommonListings.forEach(listing => processListing(listing, false));
-      uncommonListings.forEach(listing => processListing(listing, true));
+      const filteredDataSource = applyFilter(Array.from(pairMap.values()));
 
       setLoading('');
-      setDataSource(newDataSource);
+      setDataSource(filteredDataSource);
     }
-  }, [blackSats, uncommonSats, blackUncommonListings, uncommonListings, setLoading]);
+  }, [blackSats, uncommonSats, blackUncommonListings, uncommonListings, setLoading, filterOption]);
 
-  const renderCell = (text, record, isUncommon) => (
-    <div style={{ 
-      color: isUncommon ? record.uncommonColor : record.blackColor, 
-      display: 'flex', 
-      flexDirection: 'column', 
-      alignItems: 'center',
-      fontSize: 'calc(8px + 1vw)',
-      wordBreak: 'break-word'
-    }}>
-      <div>
-        {isUncommon ? record.uncommonId : record.blackId && (
-          <a 
-            href={`https://magisat.io/listing/${isUncommon ? record.uncommonId : record.blackId}`} 
-            target="_blank" 
-            rel="noopener noreferrer"
-          >
-            <img src={magisatLogo} alt="Magisat" style={{ width: '30px', height: '30px', verticalAlign: 'middle', marginRight: '3px' }} />
-          </a>
-        )}
-        {text}
-      </div>
-      {(isUncommon ? record.uncommonPrice : record.blackPrice) && (
-        <div style={{ fontSize: '0.8em' }}>
-          {isUncommon ? record.uncommonPrice : record.blackPrice} sats
-        </div>
-      )}
-    </div>
-  );
-
-  const columns = [
-    {
-      title: <span style={{ fontSize: 'calc(10px + 1vw)', fontWeight: 'bold' }}>ALPHA</span>,
-      dataIndex: 'uncommon',
-      key: 'uncommon',
-      align: 'center',
-      render: (text, record) => renderCell(text, record, true),
-    },
-    {
-      title: <span style={{ fontSize: 'calc(10px + 1vw)', fontWeight: 'bold' }}>OMEGA</span>,
-      dataIndex: 'black',
-      key: 'black',
-      align: 'center',
-      render: (text, record) => renderCell(text, record, false),
-    },
-  ];
+  const handleFilterChange = (e) => {
+    setFilterOption(e.target.value);
+  };
 
   return (
-    <div style={{ display: 'flex', justifyContent: 'center', padding: '10px' }}>
-      <Table
-        columns={columns}
-        dataSource={dataSource}
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
+        <Radio.Group onChange={handleFilterChange} value={filterOption}>
+          <Radio.Button value="pairedListings">paired listings</Radio.Button>
+          <Radio.Button value="ownPairs">my pairs</Radio.Button>
+          <Radio.Button value="ownUnpaired">my unpaired</Radio.Button>
+          <Radio.Button value="ownMatch">match</Radio.Button>
+        </Radio.Group>
+      </div>
+      <Table 
+        dataSource={dataSource} 
+        columns={columns} 
+        loading={loading !== ''}
         pagination={false}
-        style={{ 
-          width: '100%', 
-          maxWidth: '80%', 
-          borderBottomLeftRadius: '10px', 
-          borderBottomRightRadius: '10px', 
-          overflow: 'hidden' 
-        }}
-        locale={{
-          emptyText: (
-            <div style={{ padding: '20px' }}>
-              <img src={ordinals1} alt="ordinals1" style={{ width: '50px', height: 'auto' }} />
-            </div>
-          )
+        style={{
+          width: '80%',
+          margin: '0 auto',
+          borderRadius: '10px',
+          overflow: 'hidden',
+          boxShadow: '0 0 10px rgba(0, 0, 0, 0.1)',
         }}
       />
     </div>

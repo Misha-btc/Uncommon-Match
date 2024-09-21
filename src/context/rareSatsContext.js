@@ -1,11 +1,11 @@
-import React, { createContext, useState, useContext } from 'react';
+import React, { createContext, useState, useContext, useEffect } from 'react';
 
 const RareSatsContext = createContext();
 
 export const RareSatsProvider = ({ children }) => {
   const [loading, setLoading] = useState('');
   const [blackSats, setBlackSats] = useState(() => {
-    const saved = localStorage.getItem('blackUncommonSats');
+    const saved = localStorage.getItem('blackSats');
     return saved ? JSON.parse(saved) : [];
   });
 
@@ -14,14 +14,27 @@ export const RareSatsProvider = ({ children }) => {
     return saved ? JSON.parse(saved) : [];
   });
 
+  useEffect(() => {
+    localStorage.setItem('blackSats', JSON.stringify(blackSats));
+  }, [blackSats]);
+
+  useEffect(() => {
+    localStorage.setItem('uncommonSats', JSON.stringify(uncommonSats));
+  }, [uncommonSats]);
+
   const addBlackSats = (newBlackSats) => {
-    setBlackSats((prevSats) => [...prevSats, ...newBlackSats]);
-    localStorage.setItem('blackUncommonSats', JSON.stringify(blackSats));
+    setBlackSats((prevSats) => [...new Set([...prevSats, ...newBlackSats])]);
   };
 
   const addUncommonSats = (newUncommonSats) => {
-    setUncommonSats((prevSats) => [...prevSats, ...newUncommonSats]);
-    localStorage.setItem('uncommonSats', JSON.stringify(uncommonSats));
+    setUncommonSats((prevSats) => [...new Set([...prevSats, ...newUncommonSats])]);
+  };
+
+  const clearRareSats = () => {
+    setBlackSats([]);
+    setUncommonSats([]);
+    localStorage.removeItem('blackSats');
+    localStorage.removeItem('uncommonSats');
   };
 
   return (
@@ -31,6 +44,7 @@ export const RareSatsProvider = ({ children }) => {
         uncommonSats, 
         addBlackSats, 
         addUncommonSats,
+        clearRareSats,
         loading,
         setLoading
       }}

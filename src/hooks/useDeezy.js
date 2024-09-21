@@ -27,18 +27,13 @@ const useDeezy = () => {
       }
 
       const statusData = await statusResponse.json();
-      console.log('statusData = await statusResponse.json();', statusData);
-
       if (statusData.status === 'COMPLETED') {
-        console.log('status completed:', statusData);
-        console.log('ЖОООООПА');
         setStatusResult(statusData);
         const { blackUncommonSats, uncommonSats } = sortRareSats(statusData);
         addBlackSats(blackUncommonSats);
         addUncommonSats(uncommonSats);
         clearInterval(intervalRef.current);
       } else if (statusData.status === 'PENDING' || statusData.status === 'PROCESSING') {
-        console.log('Processing still continues...');
       } else {
         clearInterval(intervalRef.current);
         setError('Unexpected status: ' + statusData.status);
@@ -75,7 +70,6 @@ const useDeezy = () => {
       }
 
       const data = await response.json();
-      console.log(data);
       setResult(data);
 
       // Start checking status every second

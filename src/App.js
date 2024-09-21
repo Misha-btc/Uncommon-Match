@@ -14,7 +14,6 @@ function App() {
           <MagisatListingProvider>
             <Header />
             <MatchPage />
-            <ScanComponent />
           </MagisatListingProvider>
         </RareSatsProvider>
       </WalletProvider>

@@ -6,12 +6,12 @@ import useDeezy from '../hooks/useDeezy';
 import useMagisat from '../hooks/useMagisat';
 
 function ScanComponent() {
-  const { ordinalsAddress, isAddressConfirmed } = useWallet();
+  const { ordinalsAddress, isConnected } = useWallet();
   const { scanAddress, loading } = useDeezy();
   const { fetchListings } = useMagisat();
 
   const handleScan = async () => {
-    if (ordinalsAddress && isAddressConfirmed) {
+    if (ordinalsAddress && isConnected) {
         scanAddress(ordinalsAddress);
         fetchListings();
     } else {
@@ -21,19 +21,16 @@ function ScanComponent() {
 
   return (
     <div>
-    {isAddressConfirmed && (
+    {isConnected && (
       <Button
         type="primary"
         icon={<ScanOutlined />}
         onClick={loading === '' ? handleScan : null}
         style={{
           fontSize: 'clamp(12px, 3vw, 16px)',
-          position: 'fixed',
-          bottom: '20px',
-          left: '40%',
-          right: '40%',
+          margin: '20px auto', // Центрирование кнопки
           padding: '20px',
-          backgroundColor: 'rgba(50, 50, 50, 0.8)',
+          backgroundColor: 'rgba(20, 150, 70)',
           backdropFilter: 'blur(10px)',
           display: 'flex',
           justifyContent: 'center',
@@ -41,9 +38,11 @@ function ScanComponent() {
           zIndex: 1000,
           borderRadius: '30px',
           height: 'auto',
+          width: 'fit-content', // Автоматическая ширина для центрирования
+          fontWeight: 'bold', // Жирный текст
         }}
       >
-        {loading === '' ? 'SCAN' : 'SCANNING...'}
+        {loading === '' ? 'MATCH' : 'MATCHING...'}
       </Button>
     )}
     </div>

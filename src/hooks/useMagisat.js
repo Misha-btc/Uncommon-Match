@@ -75,9 +75,7 @@ const useMagisat = () => {
 
       setBlackList(blackData);
       setUncommonList(uncommonData);
-      console.log('blackData', blackData);
-      console.log('uncommonData', uncommonData);
-      
+
       const allListings = [...blackData, ...uncommonData];
       setListings(allListings);
       const sortedListings = sortListings(blackData, uncommonData);
@@ -85,7 +83,6 @@ const useMagisat = () => {
       setUncommonListings(sortedListings.uncommonListings);
       localStorage.setItem('magisatBlackUncommonListings', JSON.stringify(sortedListings.blackListings));
       localStorage.setItem('magisatUncommonListings', JSON.stringify(sortedListings.uncommonListings));
-      console.log('sortedListings', sortedListings);
     } catch (err) {
       console.error('Ошибка при загрузке листингов:', err);
       setError(`Произошла ошибка при загрузке листингов: ${err.message}`);

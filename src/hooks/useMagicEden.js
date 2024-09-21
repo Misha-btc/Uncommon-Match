@@ -31,16 +31,12 @@ const useMagicEden = () => {
           console.error('Неожиданный формат данных:', data);
           break;
         }
-        
-        console.log('data', data);
+
         allTokens = allTokens.concat(data.tokens);
         nextOffset = data.nextOffset;
         iterationCount++;
-        
-        console.log(`Итерация ${iterationCount}: получено ${data.tokens.length} токенов`);
-        
+
         if (data.tokens.length < 100 || data.nextOffset === '0') {
-          console.log('Все данные получены');
           break;
         }
       } catch (error) {
@@ -48,8 +44,6 @@ const useMagicEden = () => {
         break;
       }
     } while (iterationCount < maxIterations);
-
-    console.log(`Всего получено ${allTokens.length} токенов`);
     return { tokens: allTokens }; // Изменено для возврата данных под ключом токенс
   };
 

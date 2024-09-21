@@ -1,5 +1,4 @@
 export function sortRareSats(rareSats) {
-  console.log('Входные данные в sortRareSats:', rareSats); // Логируем входные данные
 
   const blackUncommonSats = [];
   const uncommonSats = [];
@@ -36,7 +35,6 @@ export function sortRareSats(rareSats) {
     console.error('Ошибка в sortRareSats:', error); // Логируем ошибку
   }
 
-  console.log('Результат sortRareSats:', { blackUncommonSats, uncommonSats }); // Логируем результат
   return { blackUncommonSats, uncommonSats };
 }
 
