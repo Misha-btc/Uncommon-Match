@@ -5,13 +5,16 @@ const WalletContext = createContext(undefined);
 export const WalletProvider = ({ children }) => {
   const [paymentAddress, setPaymentAddress] = useState(localStorage.getItem('paymentAddress') || '');
   const [ordinalsAddress, setOrdinalsAddress] = useState(localStorage.getItem('ordinalsAddress') || '');
+  const [isAddressConfirmed, setIsAddressConfirmed] = useState(ordinalsAddress);
 
   return (
     <WalletContext.Provider value={{
       paymentAddress,
       ordinalsAddress,
       setPaymentAddress,
-      setOrdinalsAddress
+      setOrdinalsAddress,
+      isAddressConfirmed,
+      setIsAddressConfirmed
     }}>
       {children}
     </WalletContext.Provider>

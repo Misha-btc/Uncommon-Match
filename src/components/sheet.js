@@ -1,122 +1,184 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Table } from 'antd';
 import { useRareSats } from '../context/rareSatsContext';
+import { useMagisatListing } from '../context/magisatListingContext';
+import ordinals1 from './ordinals1.png';
+import magisatLogo from './magisatLogo.png';
 
-const Sheet = ({ listings }) => {
-  const { blackSats, uncommonSats } = useRareSats();
-  
-  // Создаем массивы для отсутствующих сатов
-  const missingUncommonSats = [];
-  const missingBlackSats = [];
+const Sheet = () => {
+  const { blackSats, uncommonSats, loading, setLoading } = useRareSats();
+  const { blackUncommonListings, uncommonListings } = useMagisatListing();
+  const [dataSource, setDataSource] = useState([]);
 
-  // Новые массивы для отсутствующих сатов, доступных в листингах
-  const availableUncommonSats = [698619900000000];
-  const availableBlackSats = [];
+  useEffect(() => {
+    if (blackSats && uncommonSats && blackUncommonListings.length > 0 && uncommonListings.length > 0) {
+      setLoading('loading...');
+      const blackSet = new Set(blackSats);
+      const uncommonSet = new Set(uncommonSats);
+      const blackListingsSet = new Set(blackUncommonListings.map(listing => listing.satIndex));
+      const uncommonListingsSet = new Set(uncommonListings.map(listing => listing.satIndex));
 
-  // Преобразуем листинги в множества для быстрого поиска
-  const blackListingsSet = new Set(listings.blackListings);
-  const uncommonListingsSet = new Set(listings.uncommonListings);
+      const newDataSource = [];
+      const addedSats = new Set();
+      const hypotheticalPairs = new Map();
+      const listingPairs = new Map();
+
+      // Находим пары на листингах
+      blackUncommonListings.forEach(black => {
+        const uncommon = Number(black.satIndex) - 99_999_999;
+        if (uncommonListingsSet.has(uncommon.toString())) {
+          listingPairs.set(Number(black.satIndex), uncommon);
+        }
+      });
+
+      // Функция для добавления сата в dataSource
+      const addSat = (
+        sat, 
+        isUncommon, 
+        isOwned, 
+        blackColor, 
+        uncommonColor, 
+        uncommonPrice = null, 
+        blackPrice = null,
+        uncommonId = null, 
+        blackId = null
+      ) => {
+        if (addedSats.has(sat)) return;
+
+        const pair = isUncommon ? sat + 99_999_999 : sat - 99_999_999;
+        const key = `${isUncommon ? 'uncommon' : 'black'}-${isOwned ? 'own' : 'listing'}-${sat}`;
+
+        newDataSource.push({
+          key,
+          uncommon: isUncommon ? sat : pair,
+          black: isUncommon ? pair : sat,
+          uncommonColor: uncommonColor,
+          blackColor: blackColor,
+          uncommonPrice: uncommonPrice,
+          blackPrice: blackPrice,
+          uncommonId: uncommonId,
+          blackId: isUncommon ? null : blackId,
+        });
+
+        addedSats.add(sat);
+        
+        // Добавляем гипотетическую пару
+        if (isOwned) {
+          hypotheticalPairs.set(pair, 'red');
+        }
+      };
+
+      // Добавляем наши саты из useRareSats
+      uncommonSet.forEach(uncommon => addSat(uncommon, true, true, 'green'));
+      blackSet.forEach(black => addSat(black, false, true, 'green'));
+
+      // Обрабатываем листинги
+      const processListing = (listing, isUncommon) => {
+        const sat = Number(listing.satIndex);
+        const pair = isUncommon ? sat + 99_999_999 : sat - 99_999_999;
+        if (addedSats.has(sat)) {
+          // Если сат уже добавлен (наш), меняем цвет на фиолетовый
+          const index = newDataSource.findIndex(item => 
+            (isUncommon ? item.uncommon : item.black) === sat
+          );
+          if (index !== -1) {
+            if (isUncommon) {
+              newDataSource[index].uncommonColor = 'purple';
+              newDataSource[index].uncommonPrice = listing.relativeUnitPrice;
+              newDataSource[index].uncommonId = listing.id;
+            } else {
+              newDataSource[index].blackColor = 'purple';
+              newDataSource[index].blackPrice = listing.relativeUnitPrice;
+              newDataSource[index].blackId = listing.id;
+            }
+          }
+        } else if (hypotheticalPairs.has(sat)) {
+          // Если сат совпадает с гипотетической парой, добавляем как красный
+          addSat(sat, isUncommon, false, 'red', 'red', listing.relativeUnitPrice, null, listing.id, listing.id);
+        } else if (listingPairs.has(sat)) {
+          // Если сат имеет пару на листинге, добавляем как голубой
+          addSat(sat, isUncommon, false, 'blue', 'blue', listing.relativeUnitPrice, null, listing.id, listing.id);
+        } else if (uncommonSet.has(isUncommon ? sat : pair) || blackSet.has(isUncommon ? pair : sat)) {
+          // Добавляем только если у нас есть хотя бы один сат из пары
+          addSat(sat, isUncommon, false, 'black', 'black', listing.relativeUnitPrice, null, listing.id, listing.id);
+        }
+      };
+
+      blackUncommonListings.forEach(listing => processListing(listing, false));
+      uncommonListings.forEach(listing => processListing(listing, true));
+
+      setLoading('');
+      setDataSource(newDataSource);
+    }
+  }, [blackSats, uncommonSats, blackUncommonListings, uncommonListings, setLoading]);
+
+  const renderCell = (text, record, isUncommon) => (
+    <div style={{ 
+      color: isUncommon ? record.uncommonColor : record.blackColor, 
+      display: 'flex', 
+      flexDirection: 'column', 
+      alignItems: 'center',
+      fontSize: 'calc(8px + 1vw)',
+      wordBreak: 'break-word'
+    }}>
+      <div>
+        {isUncommon ? record.uncommonId : record.blackId && (
+          <a 
+            href={`https://magisat.io/listing/${isUncommon ? record.uncommonId : record.blackId}`} 
+            target="_blank" 
+            rel="noopener noreferrer"
+          >
+            <img src={magisatLogo} alt="Magisat" style={{ width: '30px', height: '30px', verticalAlign: 'middle', marginRight: '3px' }} />
+          </a>
+        )}
+        {text}
+      </div>
+      {(isUncommon ? record.uncommonPrice : record.blackPrice) && (
+        <div style={{ fontSize: '0.8em' }}>
+          {isUncommon ? record.uncommonPrice : record.blackPrice} sats
+        </div>
+      )}
+    </div>
+  );
 
   const columns = [
     {
-      title: <span style={{ fontSize: '1.5em', fontWeight: 'bold' }}>UNCOMMON</span>,
+      title: <span style={{ fontSize: 'calc(10px + 1vw)', fontWeight: 'bold' }}>ALPHA</span>,
       dataIndex: 'uncommon',
       key: 'uncommon',
       align: 'center',
-      width: '50%',
-      render: (text, record) => (
-        <span style={{ color: record.uncommonExists ? 'green' : 'black' }}>{text}</span>
-      ),
+      render: (text, record) => renderCell(text, record, true),
     },
     {
-      title: <span style={{ fontSize: '1.5em', fontWeight: 'bold' }}>BLACK</span>,
+      title: <span style={{ fontSize: 'calc(10px + 1vw)', fontWeight: 'bold' }}>OMEGA</span>,
       dataIndex: 'black',
       key: 'black',
       align: 'center',
-      width: '50%',
-      render: (text, record) => (
-        <span style={{ color: record.blackExists ? 'green' : 'black' }}>{text}</span>
-      ),
+      render: (text, record) => renderCell(text, record, false),
     },
   ];
 
-  const dataSource = [];
-  const blackSet = new Set(blackSats);
-  const uncommonSet = new Set(uncommonSats);
-
-  uncommonSats.forEach((uncommon) => {
-    const hypotheticalBlack = uncommon + 99_999_999;
-    if (blackSet.has(hypotheticalBlack)) {
-      dataSource.push({
-        key: `uncommon-${uncommon}`,
-        uncommon,
-        uncommonExists: true,
-        black: hypotheticalBlack,
-        blackExists: true,
-      });
-    }
-    
-    // Добавляем отсутствующий black сат в массив
-    if (!blackSet.has(hypotheticalBlack)) {
-      missingBlackSats.push(hypotheticalBlack);
-      // Проверяем, есть ли отсутствующий сат в листингах
-      if (blackListingsSet.has(hypotheticalBlack.toString())) {
-        availableBlackSats.push(hypotheticalBlack);
-      }
-    }
-  });
-
-  blackSats.forEach((black) => {
-    const hypotheticalUncommon = black - 99_999_999;
-    if (uncommonSet.has(hypotheticalUncommon)) {
-      dataSource.push({
-        key: `black-${black}`,
-        uncommon: hypotheticalUncommon,
-        uncommonExists: true,
-        black,
-        blackExists: true,
-      });
-    }
-    
-    // Добавляем отсутствующий uncommon сат в массив
-    missingUncommonSats.push(hypotheticalUncommon);
-    // Проверяем, есть ли отсутствующий сат в листингах
-    if (uncommonListingsSet.has(hypotheticalUncommon.toString())) {
-      availableUncommonSats.push(hypotheticalUncommon);
-    }
-  });
-
-  // Добавляем доступные отсутствующие саты в dataSource
-  availableUncommonSats.forEach((uncommon) => {
-    const hypotheticalBlack = uncommon + 99_999_999;
-    dataSource.push({
-      key: `available-uncommon-${uncommon}`,
-      uncommon,
-      uncommonExists: false,
-      black: hypotheticalBlack,
-      blackExists: blackSet.has(hypotheticalBlack),
-    });
-  });
-
-  availableBlackSats.forEach((black) => {
-    const hypotheticalUncommon = black - 99_999_999;
-    dataSource.push({
-      key: `available-black-${black}`,
-      uncommon: hypotheticalUncommon,
-      uncommonExists: uncommonSet.has(hypotheticalUncommon),
-      black,
-      blackExists: false,
-    });
-  });
-
-  console.log('Отсутствующие uncommon саты:', missingUncommonSats);
-  console.log('Отсутствующие black саты:', missingBlackSats);
-  console.log('Доступные отсутствующие uncommon саты:', availableUncommonSats);
-  console.log('Доступные отсутствующие black саты:', availableBlackSats);
-
   return (
-    <div>
-      <Table columns={columns} dataSource={dataSource} pagination={false} />
+    <div style={{ display: 'flex', justifyContent: 'center', padding: '10px' }}>
+      <Table
+        columns={columns}
+        dataSource={dataSource}
+        pagination={false}
+        style={{ 
+          width: '100%', 
+          maxWidth: '80%', 
+          borderBottomLeftRadius: '10px', 
+          borderBottomRightRadius: '10px', 
+          overflow: 'hidden' 
+        }}
+        locale={{
+          emptyText: (
+            <div style={{ padding: '20px' }}>
+              <img src={ordinals1} alt="ordinals1" style={{ width: '50px', height: 'auto' }} />
+            </div>
+          )
+        }}
+      />
     </div>
   );
 };

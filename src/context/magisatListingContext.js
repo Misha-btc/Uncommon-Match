@@ -13,11 +13,6 @@ export const MagisatListingProvider = ({ children }) => {
     return saved ? JSON.parse(saved) : [];
   });
 
-  const [listingStore, setListingStore] = useState(() => {
-    const saved = localStorage.getItem('magisatListings');
-    return saved ? JSON.parse(saved) : [];
-  });
-
   const addUncommonListing = (newListing) => {
     setUncommonListings((prevListings) => {
       const updatedListings = [...prevListings, newListing];
@@ -50,11 +45,11 @@ export const MagisatListingProvider = ({ children }) => {
       value={{ 
         uncommonListings,
         blackUncommonListings,
+        setUncommonListings,
+        setBlackUncommonListings,
         addUncommonListing,
         addBlackUncommonListing,
         removeListing,
-        listingStore,
-        setListingStore
       }}
     >
       {children}

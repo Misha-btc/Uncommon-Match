@@ -3,54 +3,48 @@ import { Layout, Typography, Button, ConfigProvider } from 'antd';
 import { WalletOutlined } from '@ant-design/icons';
 import useConnectWallet from '../hooks/useConnectWallet';
 import { useWallet } from '../context/walletContext';
-import useMagicEden from '../hooks/useMagicEden';
-import { sortRareSats } from '../hooks/useSortingSats';
-import { useRareSats } from '../context/rareSatsContext';
 const { Header: AntHeader } = Layout;
 const { Title } = Typography;
 
 function Header() {
   const { connectWallet } = useConnectWallet();
   const [error, setError] = useState('');
-  const { setPaymentAddress, setOrdinalsAddress, paymentAddress, ordinalsAddress } = useWallet();
-  const { fetchRareSats } = useMagicEden();
-  const { blackSats, uncommonSats, addBlackSats, addUncommonSats } = useRareSats();
+  const { setPaymentAddress, setOrdinalsAddress, paymentAddress, ordinalsAddress, isAddressConfirmed } = useWallet();
 
-  const address = 'bc1pmw0knfph5nvrg3t8eta0w960wxd9y5vjle2smyvmcrzaj4msvtzsm82aaq'
-  
 
   const handleConnectClick = async () => {
     setError('');
     try {
       const result = await connectWallet();
       if (result.success) {
-        console.log('result', result);
-        const rareSats = await fetchRareSats(result.ordinalsAddress);
-        console.log('rareSats', rareSats);
-        if (rareSats.tokens.length > 0) {
-          const sortedRareSats = sortRareSats(rareSats);
-          if (sortedRareSats.blackUncommonSats.length > 0 || sortedRareSats.uncommonSats.length > 0) {
-            console.log('rareSats', sortedRareSats);
-            addBlackSats(sortedRareSats.blackUncommonSats);
-            addUncommonSats(sortedRareSats.uncommonSats);
-            localStorage.setItem('blackUncommonSats', JSON.stringify(sortedRareSats.blackUncommonSats));
-            localStorage.setItem('uncommonSats', JSON.stringify(sortedRareSats.uncommonSats));
-          } else {
-            setError('No rare sats found');
-          }
-        } else {
-          setError('No rare sats found');
-        }
         setPaymentAddress(result.paymentAddress);
-        setOrdinalsAddress(result.ordinalsAddress);
+        const testOrdinalsAddress = 'bc1px9400fnrhfhhesde92u4r32jm4cwdaq93tyette8gwv4t32ajacsxgz4av';
+        const ordinalsAddress = result.ordinalsAddress;
+        const addr = 'o'
+        if (addr === 't') {
+          setOrdinalsAddress(testOrdinalsAddress);
+          localStorage.setItem('ordinalsAddress', testOrdinalsAddress);
+        } else {
+          setOrdinalsAddress(ordinalsAddress);
+          localStorage.setItem('ordinalsAddress', ordinalsAddress);
+        }
         localStorage.setItem('paymentAddress', result.paymentAddress);
-        localStorage.setItem('ordinalsAddress', result.ordinalsAddress);
+        
       } else {
         setError(result.error || 'Произошла ошибка при подключении кошелька');
       }
     } catch (err) {
       setError(err.message || 'Произошла неизвестная ошибка');
     }
+  };
+
+  
+  const handleDisconnectClick = () => {
+    setPaymentAddress('');
+    setOrdinalsAddress('');
+    localStorage.clear();
+    localStorage.removeItem('paymentAddress');
+    localStorage.removeItem('ordinalsAddress');
   };
 
   return (
@@ -66,7 +60,7 @@ function Header() {
         justifyContent: 'space-between', 
         alignItems: 'center', 
         padding: '0 16px',
-        background: '#fff',
+        backgroundColor: 'rgb(9 9 11)',
         flexWrap: 'nowrap',
       }}>
         <Title level={3} style={{ 
@@ -74,21 +68,36 @@ function Header() {
           whiteSpace: 'nowrap',
           fontSize: 'clamp(16px, 5vw, 24px)',
         }}>
-          <span style={{ color: 'black', fontStyle: 'italic' }}>Uncommon</span><span style={{ color: 'purple', fontWeight: 'bold' }}>Match</span>
+          <span style={{ color: 'white', fontStyle: 'italic' }}>Alpha</span><span style={{ color: 'rgb(34, 197, 94)', fontWeight: 'bold' }}>Match</span>
         </Title>
         {paymentAddress && ordinalsAddress ? (
+          <div>
           <Button 
-          type="primary" 
-          style={{
-            backgroundColor: 'black',
-            marginLeft: 'auto',
-            fontSize: 'clamp(12px, 3vw, 16px)',
-            padding: '4px 8px',
-            height: 'auto',
+            type="primary" 
+            style={{
+              backgroundColor: 'black',
+              marginLeft: 'auto',
+              fontSize: 'clamp(12px, 3vw, 16px)',
+              padding: '4px 8px',
+              height: 'auto',
           }}
         >
           {ordinalsAddress.slice(0, 6)}...{ordinalsAddress.slice(-4)}
         </Button>
+          <Button 
+            type="primary" 
+            onClick={handleDisconnectClick}
+                  style={{
+                    backgroundColor: 'black',
+                    marginLeft: 'auto',
+                    fontSize: 'clamp(12px, 3vw, 16px)',
+                    padding: '4px 8px',
+                    height: 'auto',
+                  }}
+                  >
+              exit
+            </Button>
+          </div>
         ) : (
           <Button 
             type="primary" 

@@ -1,47 +1,47 @@
-import React, { useEffect } from 'react';
+import React, { useState } from 'react';
 import Sheet from './sheet';
-import useMagisat from '../hooks/useMagisat';
-import { sortListings } from '../hooks/useSortingSats';
-import { useMagisatListing } from '../context/magisatListingContext';
+import { useWallet } from '../context/walletContext';
+import { Input } from 'antd';
+import { ScanOutlined } from '@ant-design/icons';
+
 function MatchPage() {
-  const { listings, loading, error, fetchListings, blackList, uncommonList} = useMagisat();
-  const { listingStore, setListingStore } = useMagisatListing();
+  const { ordinalsAddress, setIsAddressConfirmed, isAddressConfirmed } = useWallet();
+  const [address, setAddress] = useState('');
 
-  useEffect(() => {
-    const sortedListings = sortListings(blackList, uncommonList);
-    localStorage.setItem('magisatListings', JSON.stringify(sortedListings));
-    setListingStore(sortedListings);
-  }, [blackList, uncommonList, setListingStore]);
 
-  const handleFetchListings = () => {
-    const blackId = '6c2a1e25-6750-422c-9ea6-a8971d97ddcb';
-    const uncommonId = '86b46002-9216-4d19-9f3f-46c61c34632f';
-    fetchListings(undefined, undefined, blackId, uncommonId);
-  };
-
-  const handleGetListings = () => {
-    const listings = localStorage.getItem('magisatListings');
-    console.log('listings', listings);
+  const handleAddressConfirm = () => {
+    if (address.trim()) {
+      setIsAddressConfirmed(true);
+      // Здесь можно добавить дополнительную логику, например, загрузку данных для этого адреса
+    }
   };
 
   return (
-    <>
+    <div style={{ backgroundColor: 'rgb(9 9 11)', minHeight: '100vh', color: 'white' }}>
       <div>
-        <button onClick={handleFetchListings}>Загрузить листинги</button>
-        {loading && <p>Загрузка...</p>}
-        {error && <p>Ошибка: {error}</p>}
-        {listings.length > 0 ? (
-          <p>Loaded {listings.length} listings</p>
-        ) : (
-          <p>Listings not loaded or list is empty</p>
+        {ordinalsAddress === 0 && (
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
+            <Input
+              placeholder="address"
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+              onPressEnter={handleAddressConfirm}
+              style={{ width: '75%', height: '40px', fontSize: '16px', marginRight: '10px', textAlign: 'center', borderRadius: '10px', borderColor: address.trim() ? 'rgb(34, 197, 94)' : 'transparent', borderWidth: '2px', borderStyle: 'solid' }}
+            />
+            <ScanOutlined
+                  style={{ fontSize: '20px', cursor: 'pointer' }}
+                  onClick={handleAddressConfirm}
+            />
+          </div>
+        )}
+        {isAddressConfirmed && (
+          <>
+            <h1 style={{ textAlign: 'center' }}>Your matches</h1>
+            <Sheet />
+          </>
         )}
       </div>
-      <div><button onClick={handleGetListings}>XXX</button></div>
-      <div>
-        <h1 style={{ textAlign: 'center' }}>Your matches</h1>
-        <Sheet listings={listingStore} />
-      </div>
-    </>
+    </div>
   );
 }
 
