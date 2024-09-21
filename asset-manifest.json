@@ -1,16 +1,16 @@
 {
   "files": {
     "main.css": "/Uncommon-Match/static/css/main.28202fa4.css",
-    "main.js": "/Uncommon-Match/static/js/main.271c5feb.js",
-    "static/js/453.a6a91c20.chunk.js": "/Uncommon-Match/static/js/453.a6a91c20.chunk.js",
+    "main.js": "/Uncommon-Match/static/js/main.2a724cec.js",
+    "static/js/453.0ec07fe4.chunk.js": "/Uncommon-Match/static/js/453.0ec07fe4.chunk.js",
     "static/media/magisatLogo.png": "/Uncommon-Match/static/media/magisatLogo.a2086d1f65177afca928.png",
     "index.html": "/Uncommon-Match/index.html",
     "main.28202fa4.css.map": "/Uncommon-Match/static/css/main.28202fa4.css.map",
-    "main.271c5feb.js.map": "/Uncommon-Match/static/js/main.271c5feb.js.map",
-    "453.a6a91c20.chunk.js.map": "/Uncommon-Match/static/js/453.a6a91c20.chunk.js.map"
+    "main.2a724cec.js.map": "/Uncommon-Match/static/js/main.2a724cec.js.map",
+    "453.0ec07fe4.chunk.js.map": "/Uncommon-Match/static/js/453.0ec07fe4.chunk.js.map"
   },
   "entrypoints": [
     "static/css/main.28202fa4.css",
-    "static/js/main.271c5feb.js"
+    "static/js/main.2a724cec.js"
   ]
 }
