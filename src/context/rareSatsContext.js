@@ -1,8 +1,10 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
+import { useWallet } from './walletContext';
 
 const RareSatsContext = createContext();
 
 export const RareSatsProvider = ({ children }) => {
+  const { isConnected } = useWallet();
   const [loading, setLoading] = useState('');
   const [blackSats, setBlackSats] = useState(() => {
     const saved = localStorage.getItem('blackSats');
@@ -36,6 +38,15 @@ export const RareSatsProvider = ({ children }) => {
     localStorage.removeItem('blackSats');
     localStorage.removeItem('uncommonSats');
   };
+
+  useEffect(() => {
+    if (!isConnected) {
+      localStorage.removeItem('blackSats');
+      localStorage.removeItem('uncommonSats');
+      setBlackSats([]);
+      setUncommonSats([]);
+    }
+  }, [isConnected]);
 
   return (
     <RareSatsContext.Provider 

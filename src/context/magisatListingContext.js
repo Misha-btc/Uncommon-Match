@@ -1,8 +1,10 @@
-import React, { createContext, useState, useContext } from 'react';
+import React, { createContext, useState, useContext, useEffect } from 'react';
+import { useWallet } from './walletContext';
 
 const MagisatListingContext = createContext();
 
 export const MagisatListingProvider = ({ children }) => {
+  const { isConnected } = useWallet();
   const [uncommonListings, setUncommonListings] = useState(() => {
     const saved = localStorage.getItem('magisatUncommonListings');
     return saved ? JSON.parse(saved) : [];
@@ -39,6 +41,15 @@ export const MagisatListingProvider = ({ children }) => {
       return updatedListings;
     });
   };
+
+  useEffect(() => {
+    if (!isConnected) {
+      localStorage.removeItem('magisatUncommonListings');
+      localStorage.removeItem('magisatBlackUncommonListings');
+      setUncommonListings([]);
+      setBlackUncommonListings([]);
+    }
+  }, [isConnected]);
 
   return (
     <MagisatListingContext.Provider 
